@@ -5,7 +5,7 @@ using namespace std;
 struct dis { double d; int label; };
 
 bool cmp(dis& a, dis& b) {
-	return a.d < b.d;
+	return a.d > b.d;
 }
 
 KNN::KNN(pic* p)
@@ -21,19 +21,31 @@ vector<double> KNN::mat2dot(Mat mt)
 	//28x28 分成 4x4个7x7的小块
 	int i, j, stx, sty;
 	double sumbychunk = 0.0;
-	vector<double> dot(16);
-	for (i = 0; i < 4; i++) {
-		sty = i * 7;
-		for (j = 0; j < 4; j++) {
-			stx = j * 7;
+	vector<double> dot(49);
+	//for (i = 0; i < 4; i++) {
+	//	sty = i * 7;
+	//	for (j = 0; j < 4; j++) {
+	//		stx = j * 7;
+	//		//每块取平均灰度
+	//		for (int ky = 0; ky < 7; ky++) {
+	//			for (int kx = 0; kx < 7; kx++) {
+	//				sumbychunk += mt.at<bool>(stx + kx, sty + ky);
+	//			}
+	//		}
+	//		dot[i * 4 + j] = sumbychunk / 49.0;
+	//	}
+	//}
+	for (i = 0; i < 7; i++) {
+		sty = i * 4;
+		for (j = 0; j < 7; j++) {
+			stx = j * 4;
 			//每块取平均灰度
-			for (int ky = 0; ky < 7; ky++) {
-				for (int kx = 0; kx < 7; kx++) {
+			for (int ky = 0; ky < 4; ky++) {
+				for (int kx = 0; kx < 4; kx++) {
 					sumbychunk += mt.at<bool>(stx + kx, sty + ky);
 				}
 			}
-			//model[label][index][i * 4 + j] = sumbychunk / 49.0;
-			dot[i * 4 + j] = sumbychunk / 49.0;
+			dot[i * 7 + j] = sumbychunk / 16.0;
 		}
 	}
 	return dot;
@@ -49,10 +61,10 @@ void KNN::train()
 		filename = "E:/VisualStudioProject/MNIST/trainimage/pic2/";
 		for (idx = 0; idx < pcnum; idx++) {
 			model[i][idx] = mat2dot(imread(filename + to_string(i) + '/' + to_string(idx + 1) + ".bmp", 0));
-		
-			
+
+
 		}
-		p->display("training label:" + to_string(i) );
+		p->display("training label:" + to_string(i));
 	}
 }
 
@@ -71,9 +83,9 @@ int KNN::predict(int K, int label, int index)
 			total++;
 			//p->display("calculating distance:" + to_string(total));
 		}
-		
+
 	}
-	sort(disset.begin(), disset.end(), cmp);
+	sort(disset.begin(), disset.end(),cmp);
 	vector<int> labelnum(10, 0);
 	for (int i = 0; i < K; i++) {
 		labelnum[disset[i].label]++;
@@ -85,11 +97,13 @@ int KNN::predict(int K, int label, int index)
 			maxlabel = i;
 		}
 	}
+	cout << "score: " << maxnum / (double)K << " ";
 	return maxlabel;
 }
 
 void KNN::test(int K, int num)
 {
+	long long start = GetTickCount64(),end;
 	int correct = 0, p;
 	for (int i = 0; i < 10; i++) {
 		for (int j = 1; j <= num; j++) {
@@ -100,7 +114,8 @@ void KNN::test(int K, int num)
 			cout << "predict:" << p << " true:" << i << endl;
 		}
 	}
-	cout << "correct rate:" + to_string(correct / (10.0 * num)) << endl;
+	end = GetTickCount64();
+	cout << "correct rate:" + to_string(correct / (10.0 * num)) <<"Time: "<<(end-start)/1000.0<< endl;
 }
 
 double KNN::distance(vector<double>& dot1, vector<double>& dot2)
@@ -117,6 +132,7 @@ double KNN::distance(vector<double>& dot1, vector<double>& dot2)
 		sum3 += (dot1[i + 2] - dot2[i + 2]) * (dot1[i + 2] - dot2[i + 2]);
 		sum4 += (dot1[i + 3] - dot2[i + 3]) * (dot1[i + 3] - dot2[i + 3]);
 	}
+
 	for (; i < dim; i++) {
 		sum1 += (dot1[i] - dot2[i]) * (dot1[i] - dot2[i]);
 	}
